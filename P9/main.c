@@ -181,7 +181,8 @@ void pruwrd(uvword* a)
 {
 	for (int i = 0; i < 12; i++) {
 		pruvc((*a)[i]);
-		printf(" ");
+        printf(" "); fflush(stdout);
+        usleep(PULSE*100);
 	}
 	printf("\n");
 }
@@ -190,7 +191,8 @@ void pprtuvw(uvword* v)
 {
 	for (int i = 0; i < 12; i++) {
 		uint8_t d = ((*v)[i].zone << 4) + (*v)[i].code;
-		printf("%c", xs3ascii[d]);
+        printf("%c", xs3ascii[d]);fflush(stdout);
+        usleep(PULSE*100);
 	}
 }
 
@@ -659,7 +661,7 @@ void _delta(void)
 
 void reset(void)
 {
-	printf("Init memory and regs... ");
+    printf("Init memory and regs... "); fflush(stdout);
 	
 	_inituvw(&CC);
 	_inituvw(&CR);
@@ -698,7 +700,7 @@ void reset(void)
             usleep(PULSE);
 		}
 	}
-	printf("done.\n");
+    printf("done.\n"); fflush(stdout);
 }
 
 int main()
