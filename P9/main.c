@@ -9,9 +9,7 @@
 #define WRDSIZE 12
 #define HWRDSIZE 6
 
-#define xz(v) ((v)&0x30)>>4
-#define xc(v) (v)&0x0f
-#define xn(v) (v)&0x3f
+#define xn(v) xs3n[(v).zone << 4) + (v).code]
 
 #define PCR printf("\n")
 
