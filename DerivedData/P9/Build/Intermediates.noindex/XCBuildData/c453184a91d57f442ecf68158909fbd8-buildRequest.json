@@ -1,0 +1,56 @@
+{
+  "_buildCommand2" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "buildCommand" : "build",
+  "configuredTargets" : [
+    {
+      "guid" : "061e79cd76dec5ce204015028fe256ba8fca40bcb45827eaaaff20e9e14f2ff9"
+    }
+  ],
+  "containerPath" : "/Users/fausap/MyDocuments/P9/P9.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "x86_64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "macosx",
+      "sdk" : "macosx12.3",
+      "sdkVariant" : "macos",
+      "supportedArchitectures" : [
+        "x86_64h",
+        "x86_64"
+      ],
+      "targetArchitecture" : "x86_64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/fausap/MyDocuments/P9/DerivedData/P9/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/fausap/MyDocuments/P9/DerivedData/P9/Build/Products",
+      "derivedDataPath" : "/Users/fausap/MyDocuments/P9/DerivedData",
+      "indexDataStoreFolderPath" : "/Users/fausap/MyDocuments/P9/DerivedData/P9/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/fausap/MyDocuments/P9/DerivedData/P9/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/fausap/MyDocuments/P9/DerivedData/P9/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "synthesized" : {
+        "table" : {
+          "ENABLE_PREVIEWS" : "NO"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "schemeCommand2" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}
