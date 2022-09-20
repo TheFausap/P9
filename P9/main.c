@@ -169,16 +169,56 @@ uint8_t uvwgt(uvword* a, uvword* b) {
 		va = va + av * (long)pow(10, i);
 		vb = vb + bv * (long)pow(10, i);
 	}
-	s = xn((*a)[0]) ? -1 : 1;
+	s = (xn((*a)[0]) == 1) ? -1 : 1;
 	va = va * s;
-	s = xn((*b)[0]) ? -1 : 1;
+	s = (xn((*b)[0]) == 1) ? -1 : 1;
 	vb = vb * s;
 
-	if (va > vl) {
+	if (va > vb) {
 		return 1;
 	}
 
 	return 0;
+}
+
+void shr_s(uint8_t n)
+{
+	for (int j = 1; j <= n; j++) {
+		for (int i = 10; i <= 0; i--) {
+			rA[i] = rA[i + 1];
+		}
+		rA[0] = u0;
+	}
+}
+
+void shl_s(uint8_t n)
+{
+	for (int j = 1; j <= n; j++) {
+		for (int i = 0; i < 11; i--) {
+			rA[i] = rA[i+1];
+		}
+		rA[11] = u0;
+	}
+}
+
+void shr(uint8_t n)
+{
+	for (int j = 1; j <= n; j++) {
+		for (int i = 10; i <= 1; i--) {
+			rA[i] = rA[i + 1];
+		}
+		rA[1] = u0;
+	}
+}
+
+void shl(uint8_t n)
+{
+	for (int j = 1; j <= n; j++) {
+		for (int i = 1; i < 11; i--) {
+			rA[i] = rA[i + 1];
+		}
+		rA[11] = u0;
+	}
 }
 
 uint8_t ps7(uint8_t v) 
@@ -488,18 +528,22 @@ void exec(void)
 	else if (opc[0] == '.') {
 		// SHIFT (rA) RIGHT, WITH SIGN, n PLACES
 		uint8_t n = opc[1] - 48;
+		shr_s(n);
 	}
 	else if (opc[0] == ';') {
 		// SHIFT (rA) LEFT, WITH SIGN, n PLACES
 		uint8_t n = opc[1] - 48;
+		shl_s(n);
 	}
 	else if (opc[0] == '-') {
 		// SHIFT (rA) RIGHT, EXC. SIGN, n PLACES
 		uint8_t n = opc[1] - 48;
+		shr(n);
 	}
 	else if (opc[0] == '0') {
 		// SHIFT (rA) LEFT, EXC. SIGN, n PLACES
 		uint8_t n = opc[1] - 48;
+		shl(n);
 	}
 	else if (opc[0] == 'H') {
 		// HOLD
