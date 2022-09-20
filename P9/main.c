@@ -11,6 +11,7 @@
 
 #define xz(v) ((v)&0x30)>>4
 #define xc(v) (v)&0x0f
+#define xn(v) (v)&0x3f
 
 #define PCR printf("\n")
 
@@ -142,6 +143,44 @@ void strrev(char *s)
     	s[n-i-1] ^= s[i]; 
     	s[i] ^= s[n-i-1]; 
     } 
+}
+
+uint8_t uvweq(uvword* a, uvword* b) {
+	uint8_t av = 0;
+	uint8_t bv = 0;
+
+	for (int i = 0; i < 12; i++) {
+		av = xn((*a)[i]); bv = xn((*b)[i]);
+		if (av != bv) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+uint8_t uvwgt(uvword* a, uvword* b) {
+	uint8_t av = 0;
+	uint8_t bv = 0;
+	long va = 0;
+	long vb = 0;
+	uint8_t s = 1;
+
+	// pos 0 is the sign
+	for (int i = 1; i<12; i++) {
+		av = xn((*a)[11-i]); bv = xn((*b)[11-i]);
+		va = va + av * (long)pow(10, i);
+		vb = vb + bv * (long)pow(10, i);
+	}
+	s = xn((*a)[0]) ? -1 : 1;
+	va = va * s;
+	s = xn((*b)[0]) ? -1 : 1;
+	vb = vb * s;
+
+	if (va > vl) {
+		return 1;
+	}
+
+	return 0;
 }
 
 uint8_t ps7(uint8_t v) 
@@ -337,7 +376,6 @@ void exec(void)
 			}
 			pos++;
 		}
-		fclose(uvconsole);
 	}
 	else if (strcmp(opc, "30") == 0) {
 		for (int i = 0; i < 3; i++) {
@@ -368,9 +406,6 @@ void exec(void)
 		}
 		// PRINT ONE WORD FROM addr
 		pprtuvw(&memory[addr]);
-	}
-	else if (strcmp(opc, "90") == 0) {
-		// STOP UNIVAC
 	}
 	else if (opc[0] == '1') {
 		// 60 WORDS FROM TAPE n, FORWARD
@@ -446,9 +481,11 @@ void exec(void)
 		// REWIND TAPE n; SET INTERLOCK
 		uint8_t n = opc[1] - 48;
 	}
+	else if (opc[0] == '9') {
+		// STOP COMPUTER
+	}
 	else if (opc[0] == ',') {
 		// BREAKPOINT STOP
-		uint8_t n = opc[1] - 48;
 	}
 	else if (opc[0] == '.') {
 		// SHIFT (rA) RIGHT, WITH SIGN, n PLACES
@@ -517,6 +554,19 @@ void exec(void)
         }
 		for (int i = 0; i < 12; i++) {
 			rF[i] = memory[addr][i];
+		}
+	}
+	else if (opc[0] == 'E') {
+		uint8_t lb = 0;
+		for (int i = 0; i < 3; i++) {
+			paddr = xs3n[(SR[5 - i].zone << 4) + SR[5 - i].code];
+			addr = addr + paddr * (uint8_t)pow(10, i);
+		}
+		for (int i = 0; i < 12; i++) {
+			lb = (rF[i].code) & 1;
+			if (lb == 0) {
+				rA[i] = memory[addr][i];
+			}
 		}
 	}
 	else if (opc[0] == 'G') {
@@ -614,6 +664,25 @@ void exec(void)
 		sprintf(cc3, "%03d", icc1);
 		strcat(cc2, cc3);
 		memcpy(memory[addr], str2uvw(cc2), sizeof(uvword));
+	}
+	else if (opc[0] == 'U') {
+		for (int i = 9; i < 12; i++) {
+			CC[i] = CR[i];
+		}
+	}
+	else if (opc[0] == 'Q') {
+		if (uvweq(&rA,&rL)) {
+			for (int i = 9; i < 12; i++) {
+				CC[i] = CR[i];
+			}
+		}
+	}
+	else if (opc[0] == 'T') {
+		if (uvwgt(&rA, &rL)) {
+			for (int i = 9; i < 12; i++) {
+				CC[i] = CR[i];
+			}
+		}
 	}
 	else {
 		printf("Illegal instruction!!!\n");
