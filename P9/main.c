@@ -9,11 +9,11 @@
 #define WRDSIZE 12
 #define HWRDSIZE 6
 
-#define xn(v) xs3n[(v).zone << 4) + (v).code]
+#define xn(v) xs3n[((v).zone << 4) + (v).code]
 
 #define PCR printf("\n")
 
-#define PULSE 200
+#define PULSE 2
 
 FILE* uvconsole;
 
@@ -143,12 +143,48 @@ void strrev(char *s)
     } 
 }
 
+uint8_t ps7(uint8_t v)
+{
+    uint8_t c = 0;
+
+    for (c = 0; v; v >>= 1){
+        c += v & 1;
+    }
+    if ((c % 2) == 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+// init to NULL (internal use)
+void _inituvw(uvword* v)
+{
+    for (int i = 0; i < 12; i++) {
+        (*v)[i].p7 = 0;
+        (*v)[i].zone = 0;
+        (*v)[i].zone = 0;
+    }
+}
+
+// init to NULL (internal use)
+void _inituvhw(uvhword* v)
+{
+    for (int i = 0; i < 6; i++) {
+        (*v)[i].p7 = 0;
+        (*v)[i].zone = 0;
+        (*v)[i].zone = 0;
+    }
+}
+
 uint8_t uvweq(uvword* a, uvword* b) {
 	uint8_t av = 0;
 	uint8_t bv = 0;
 
 	for (int i = 0; i < 12; i++) {
-		av = xn((*a)[i]); bv = xn((*b)[i]);
+        av = xn((*a)[i]);
+        bv = xn((*b)[i]);
 		if (av != bv) {
 			return 0;
 		}
@@ -162,10 +198,14 @@ uint8_t uvwgt(uvword* a, uvword* b) {
 	long va = 0;
 	long vb = 0;
 	uint8_t s = 1;
+    uvchar ac;
+    uvchar bc;
 
 	// pos 0 is the sign
 	for (int i = 1; i<12; i++) {
-		av = xn((*a)[11-i]); bv = xn((*b)[11-i]);
+        ac = (*a)[11-i];
+        bc = (*b)[11-i];
+		av = xn(ac); bv = xn(ac);
 		va = va + av * (long)pow(10, i);
 		vb = vb + bv * (long)pow(10, i);
 	}
@@ -234,47 +274,134 @@ uvchar dec2uvc(uint8_t v)
 	return r;
 }
 
-uvword* uvadd(uvword* a, uvword* b)
+void inc(uvword* v)
+{
+    uint8_t carry = 0;
+    uint8_t cc = 0;
+
+    for (int i = 11; i >= 9; i--) {
+        cc = (*v)[i].code;
+        (*v)[i].code += carry + 1;
+        (*v)[i].p7 = ps7((*v)[i].code);
+        if ((cc + 1 + carry) > 15) {
+            carry = 1;
+        }
+        else {
+            carry = 0;
+            break;
+        }
+    }
+}
+
+uvword* str2uvw(char* s)
+{
+    int slen = (int) strlen(s);
+    uvword r;
+
+    _inituvw(&r);
+    
+    for (int i = 0; i < slen; i++) {
+        r[i].zone = asciixs3[s[i]] >> 4;
+        r[i].code = asciixs3[s[i]] & 0x0f;
+        r[i].p7 = ps7(asciixs3[s[i]]);
+    }
+    if (s[0] == '-') {
+        r[0].zone = 0;
+        r[0].code = 4;
+        r[0].p7 = ps7(4);
+    }
+
+    return &r;
+}
+
+
+void uvadd(void)
 {
 	uint8_t va = 0;
 	uint8_t vb = 0;
-	uint8_t s = 0;
-	uint8_t c = 0;
-	uint8_t sa = (*a)[0];
-	uint8_t sb = (*b)[0];
-
-	uvword* r = calloc(12, sizeof(uvchar));
-
-	for (int i = 0; i < 11; i++) {
-		va = va + xn((*a)[11 - i]);
-		vb = vb + xn((*b)[11 - i]);
-		s = (sa*va) + (sb*vb);
-		s += c;
-		if (s > 9) {
-			s -= 10;
-			c = 1;
-		}
-		else {
-			c = 0;
-		}
-		r[i] = s;
-	}
+    uint8_t av = 0;
+    uint8_t bv = 0;
+	int s = 0;
+	uint8_t sa = xs3n[rA[0].code];
+	uint8_t sb = xs3n[rX[0].code];
+    char ss[13];
+    uint8_t ccf = 0;
+    
+    sa = sa ? -1 : 1;
+    sb = sb ? -1 : 1;
+    
+    // find if one of them is not a number
+    for (int i=11;i<=0;i--) {
+        ccf += rA[i].zone + rX[i].zone;
+    }
+    
+    if (ccf == 0) {
+        // both numbers... easy way
+        for (int i = 0; i<11; i++) {
+            av = xn(rA[11-i]);
+            bv = xn(rX[11-i]);
+            va = va + av * (long)pow(10, i);
+            vb = vb + bv * (long)pow(10, i);
+        }
+        va *= sa; vb *= sb;
+        s = va + vb;
+        sprintf(ss,"%012d",abs(s));
+        memcpy(rA,str2uvw(ss),sizeof(uvword));
+        
+        if (s < 0) {
+            rA[0].code = 4;
+            rA[0].zone = 0;
+            rA[0].p7 = ps7(4);
+        }
+    }
 }
 
-uint8_t ps7(uint8_t v) 
-{
-	uint8_t c = 0;
-
-	for (c = 0; v; v >>= 1){
-		c += v & 1;
-	}
-	if ((c % 2) == 0) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
+void uvmul(void) {
+    int t = 0;
+    int rLv = 0;
+    int rXv = 0;
+    int p = 0;
+    char p1[13];
+    char p2[13];
+    uint8_t sa = xs3n[rL[0].code];
+    uint8_t sb = xs3n[rX[0].code];
+    
+    char rFv[13];
+    
+    sa = sa ? -1 : 1;
+    sb = sb ? -1 : 1;
+    
+    for (int i = 0; i < 11; i++) {
+        t = t + rL[11-i].code * (uint8_t)pow(10, i);
+    }
+    rLv = t;
+    t *= 3;
+    
+    sprintf("%012d",rFv,t);
+    memcpy(rF,str2uvw(rFv),sizeof(uvword));
+    
+    t = 0;
+    for (int i = 0; i < 11; i++) {
+        t = t + rX[11-i].code * (uint8_t)pow(10, i);
+    }
+    rXv = t;
+    p = rLv * rXv;
+    
+    sprintf(p1,"%012d",(p&0x3ff800)>>11);
+    sprintf(p2,"%012d",(p&0x0007ff));
+    memcpy(rA,str2uvw(p1),sizeof(uvword));
+    memcpy(rX,str2uvw(p2),sizeof(uvword));
+    
+    if ((sa * sb) < 0) {
+        rA[0].code = 4;
+        rA[0].zone = 0;
+        rA[0].p7 = ps7(4);
+        rX[0].code = 4;
+        rX[0].zone = 0;
+        rX[0].p7 = ps7(4);
+    }
 }
+
 
 void pruvc(uvchar a)
 {
@@ -286,7 +413,7 @@ void pruwrd(uvword* a)
 	for (int i = 0; i < 12; i++) {
 		pruvc((*a)[i]);
         printf(" "); fflush(stdout);
-        usleep(PULSE*100);
+        //usleep(PULSE*100);
 	}
 	printf("\n");
 }
@@ -296,64 +423,10 @@ void pprtuvw(uvword* v)
 	for (int i = 0; i < 12; i++) {
 		uint8_t d = ((*v)[i].zone << 4) + (*v)[i].code;
         printf("%c", xs3ascii[d]);fflush(stdout);
-        usleep(PULSE*100);
+        //usleep(PULSE*100);
 	}
 }
 
-// init to NULL (internal use)
-void _inituvw(uvword* v)
-{
-	for (int i = 0; i < 12; i++) {
-		(*v)[i].p7 = 0;
-		(*v)[i].zone = 0;
-		(*v)[i].zone = 0;
-	}
-}
-
-// init to NULL (internal use)
-void _inituvhw(uvhword* v)
-{
-	for (int i = 0; i < 6; i++) {
-		(*v)[i].p7 = 0;
-		(*v)[i].zone = 0;
-		(*v)[i].zone = 0;
-	}
-}
-
-void inc(uvword* v) 
-{
-	uint8_t carry = 0;
-	uint8_t cc = 0;
-
-	for (int i = 11; i >= 9; i--) {
-		cc = (*v)[i].code;
-		(*v)[i].code += carry + 1;
-		(*v)[i].p7 = ps7((*v)[i].code);
-		if ((cc + 1 + carry) > 15) {
-			carry = 1;
-		}
-		else {
-			carry = 0;
-			break;
-		}
-	}
-}
-
-uvword* str2uvw(char* s)
-{
-	int slen = (int) strlen(s);
-	uvword r;
-
-	_inituvw(&r);
-	
-	for (int i = 0; i < slen; i++) {
-		r[i].zone = asciixs3[s[i]] >> 4;
-		r[i].code = asciixs3[s[i]] & 0x0f;
-		r[i].p7 = ps7(asciixs3[s[i]]);
-	}
-
-	return &r;
-}
 
 void read_tape(uint8_t n, uint8_t dir) {
 	char c = 0;
@@ -761,10 +834,47 @@ void exec(void)
 		for (int i = 0; i < 12; i++) {
 			rX[i] = memory[addr][i];
 		}
-		memcpy(rA, uvadd(&rA, &rX), sizeof(uvword));
+        uvadd();
 	}
+    else if (opc[0] == 'X') {
+        uvadd();
+    }
+    else if (opc[0] == 'S') {
+        for (int i = 0; i < 3; i++) {
+            paddr = xs3n[(SR[5 - i].zone << 4) + SR[5 - i].code];
+            addr = addr + paddr * (uint8_t)pow(10, i);
+        }
+        for (int i = 0; i < 12; i++) {
+            rX[i] = memory[addr][i];
+        }
+        rX[0].zone=0;
+        rX[0].code=4;
+        rX[0].p7 = ps7(4);
+        uvadd();
+    }
+    else if (opc[0] == 'P') {
+        char rLv[13];
+        
+        // PRECISION MULTIPLY
+        for (int i = 0; i < 3; i++) {
+            paddr = xs3n[(SR[5 - i].zone << 4) + SR[5 - i].code];
+            addr = addr + paddr * (uint8_t)pow(10, i);
+        }
+        for (int i = 0; i < 12; i++) {
+            rX[i] = memory[addr][i];
+        }
+    
+        for (int i = 0; i < 11; i++) {
+            addr = addr + rL[11-i].code * (uint8_t)pow(10, i);
+        }
+        addr *= 3;
+        sprintf("%012d",rLv,addr);
+        memcpy(rF,str2uvw(rLv),sizeof(uvword));
+        
+        uvmul();
+    }
 	else {
-		printf("Illegal instruction!!!\n");
+        printf("Illegal instruction!!!\n"); fflush(stdout);
 		exit(-200);
 	}
 }
@@ -821,31 +931,31 @@ void reset(void)
 		rX[i] = u0;
 		rL[i] = u0;
 		rF[i] = u0;
-        usleep(PULSE);
+        //usleep(PULSE);
 	}
 	for (int j = 0; j < 2; j++) {
 		for (int i = 0; i < WRDSIZE; i++) {
 			rV[j][i] = u0;
-            usleep(PULSE);
+            //usleep(PULSE);
 		}
 	}
 	for (int j = 0; j < 10; j++) {
 		for (int i = 0; i < WRDSIZE; i++) {
 			rY[j][i] = u0;
-            usleep(PULSE);
+            //usleep(PULSE);
 		}
 	}
 	for (int j = 0; j < 60; j++) {
 		for (int i = 0; i < WRDSIZE; i++) {
 			rI[j][i] = u0;
 			rO[j][i] = u0;
-            usleep(PULSE);
+            //usleep(PULSE);
 		}
 	}
 	for (int j = 0; j < 1000; j++) {
 		for (int i = 0; i < WRDSIZE; i++) {
 			memory[j][i] = u0;
-            usleep(PULSE);
+            //usleep(PULSE);
 		}
 	}
     printf("done.\n"); fflush(stdout);
