@@ -221,6 +221,33 @@ void shl(uint8_t n)
 	}
 }
 
+uvword* uvadd(uvword* a, uvword* b)
+{
+	uint8_t va = 0;
+	uint8_t vb = 0;
+	uint8_t s = 0;
+	uint8_t c = 0;
+	uint8_t sa = (*a)[0];
+	uint8_t sb = (*b)[0];
+
+	uvword* r = calloc(12, sizeof(uvchar));
+
+	for (int i = 0; i < 11; i++) {
+		va = va + xn((*a)[11 - i]);
+		vb = vb + xn((*b)[11 - i]);
+		s = (sa*va) + (sb*vb);
+		s += c;
+		if (s > 9) {
+			s -= 10;
+			c = 1;
+		}
+		else {
+			c = 0;
+		}
+		r[i] = s;
+	}
+}
+
 uint8_t ps7(uint8_t v) 
 {
 	uint8_t c = 0;
@@ -725,6 +752,16 @@ void exec(void)
 				CC[i] = CR[i];
 			}
 		}
+	}
+	else if (opc[0] == 'A') {
+		for (int i = 0; i < 3; i++) {
+			paddr = xs3n[(SR[5 - i].zone << 4) + SR[5 - i].code];
+			addr = addr + paddr * (uint8_t)pow(10, i);
+		}
+		for (int i = 0; i < 12; i++) {
+			rX[i] = memory[addr][i];
+		}
+		memcpy(rA, uvadd(&rA, &rX), sizeof(uvword));
 	}
 	else {
 		printf("Illegal instruction!!!\n");
