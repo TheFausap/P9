@@ -221,6 +221,19 @@ void shl(uint8_t n)
 	}
 }
 
+uvchar dec2uvc(uint8_t v)
+{
+	uvchar r;
+	uint8_t z = (v & 0b0110000) >> 4;
+	uint8_t c = v & 0b0001111;
+
+	r.p7 = ps7(v & 0b0111111);
+	r.zone = z;
+	r.code = c + 3;
+
+	return r;
+}
+
 uvword* uvadd(uvword* a, uvword* b)
 {
 	uint8_t va = 0;
@@ -261,19 +274,6 @@ uint8_t ps7(uint8_t v)
 	else {
 		return 0;
 	}
-}
-
-uvchar dec2uvc(uint8_t v)
-{
-	uvchar r;
-	uint8_t z = (v & 0b0110000) >> 4;
-	uint8_t c = v & 0b0001111;
-
-	r.p7 = ps7(v & 0b0111111);
-	r.zone = z;
-	r.code = c + 3;
-
-	return r;
 }
 
 void pruvc(uvchar a)
